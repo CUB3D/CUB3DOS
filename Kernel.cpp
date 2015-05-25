@@ -173,6 +173,21 @@ void appendLine(int line, string s)
 	setLine(line, getLine(line).append(s));
 }
 
+struct key
+{
+	char value;
+	uint16_t code;
+};
+
+int readKey()
+{
+	uint16_t port = 60;
+	uint8_t ret;
+	__asm__ volatile("inb %1, %0" : "=a" (ret) : "dN" (port));
+
+	return ret;
+}
+
 extern "C"
 void kernelInit()
 {

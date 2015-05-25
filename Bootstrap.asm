@@ -27,7 +27,8 @@ call kernelInit
 
 cli
 hlt
-.hang:
-jmp .hang
+.halt:
+jmp .halt
+
 
 .size _start, . - _start
