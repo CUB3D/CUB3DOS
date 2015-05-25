@@ -1,0 +1,13 @@
+#!/bin/bash
+
+./build
+
+rm -r isodir
+
+mkdir -p isodir/boot
+cp OS.bin isodir/boot/OS.bin
+mkdir -p isodir/boot/grub
+cp grub.cfg isodir/boot/grub/grub.cfg
+grub-mkrescue -o OS.iso isodir
+
+qemu-system-i386 -cdrom OS.iso

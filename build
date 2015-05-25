@@ -1,0 +1,10 @@
+#!/bin/bash
+
+../gcc/bin/i686-elf-as Bootstrap.asm -o Bootstrap.o
+../gcc/bin/i686-elf-g++ -c Kernel.cpp -o Kernel.o -ffreestanding -O2 -Wall -Wextra -fno-exceptions -fno-rtti
+../gcc/bin/i686-elf-g++ -c String.cpp -o String.o -ffreestanding -O2 -Wall -Wextra -fno-exceptions -fno-rtti
+../gcc/bin/i686-elf-g++ -c Memory.cpp -o Memory.o -ffreestanding -O2 -Wall -Wextra -fno-exceptions -fno-rtti
+
+
+
+../gcc/bin/i686-elf-gcc -T Linker.ld -o OS.bin -ffreestanding -O2 -nostdlib Bootstrap.o Kernel.o String.o Memory.o -lgcc
