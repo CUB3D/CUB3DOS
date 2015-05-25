@@ -32,23 +32,21 @@ uint8_t makeColour(vgaColour front, vgaColour back)
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25
 
-uint8_t terminalColour;
 uint16_t* terminalBufferPtr;
 
 string* screenBuffer;
 size_t curpos;
 
-uint16_t createVGAEntry(char c)
+uint16_t createVGAEntry(char c, uint8_t colour)
 {
 	uint16_t c16 = (uint16_t) c;
-	uint16_t colour16 = (uint16_t) terminalColour;
+	uint16_t colour16 = (uint16_t) colour;
 
 	return c16 | (colour16 << 8);
 }
 
 void initTerminal()
 {
-	terminalColour = makeColour(COLOUR_LIGHT_GREY, COLOUR_BLACK);
 	terminalBufferPtr = (uint16_t*) 0xB8000;
 
 	screenBuffer = (string*) malloc(VGA_HEIGHT * sizeof *screenBuffer);
@@ -56,7 +54,7 @@ void initTerminal()
 
 	for(int i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++)
 	{
-		terminalBufferPtr[i] = createVGAEntry(' ');
+		terminalBufferPtr[i] = createVGAEntry(' ', makeColour(COLOUR_LIGHT_GREY, COLOUR_BLACK));
 	}
 }
 
@@ -79,12 +77,43 @@ void shiftText()
 
 void blitString(string s, int line)
 {
-	const char* c = s.characters;
-	int length = s.length;
+	uint8_t colour = makeColour(COLOUR_LIGHT_GREY, COLOUR_BLACK);
 
-	for(int i = 0; i < length; i++)
+	int pos = 0;
+
+	for(int i = 0; i < s.length(); i++)
 	{
-		terminalBufferPtr[line * VGA_WIDTH + i] = createVGAEntry(c[i]);
+		char c = s[i];
+
+		if(c == '&')
+		{
+			i++;
+
+			c = s[i];
+
+			if(c == '&')
+			{
+				terminalBufferPtr[line * VGA_WIDTH + i] = createVGAEntry(c, colour);
+			}
+			else
+			{
+				switch(c)
+				{
+					case 'G':
+						colour = makeColour(COLOUR_LIGHT_GREEN, COLOUR_BLACK);
+						break;
+					case 'L':
+						colour = makeColour(COLOUR_LIGHT_GREY, COLOUR_BLACK);
+						break;
+				}
+			}
+		}
+		else
+		{
+			terminalBufferPtr[line * VGA_WIDTH + pos] = createVGAEntry(c, colour);
+
+			pos++;
+		}
 	}
 }
 
@@ -92,7 +121,7 @@ void blitText()
 {
 	for(int i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++)
 	{
-		terminalBufferPtr[i] = createVGAEntry(' ');
+		terminalBufferPtr[i] = createVGAEntry(' ', makeColour(COLOUR_LIGHT_GREY, COLOUR_BLACK));
 	}
 
 	for(int i = 0; i < VGA_HEIGHT; i++)
@@ -127,9 +156,28 @@ void writeLine(const char* str)
 	blitText();
 }
 
+string getLine(int line)
+{
+	return screenBuffer[line];
+}
+
+void setLine(int line, string s)
+{
+	screenBuffer[line] = s;
+
+	blitText();
+}
+
+void appendLine(int line, string s)
+{
+	setLine(line, getLine(line).append(s));
+}
+
 extern "C"
 void kernelInit()
 {
+	writeLine("KernelInit... ");
+	appendLine(1, string("[&GOK&L]"));
 }
 
 extern "C"
@@ -138,6 +186,5 @@ void kernelPreInit()
 	initTerminal();
 
 	writeLine("KernelPreInit... ");
-	screenBuffer[0] = screenBuffer[0].append(string("[OK]"));
-	blitText();
+	appendLine(0, string("[&GOK&L]"));
 }
